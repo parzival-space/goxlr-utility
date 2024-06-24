@@ -23,7 +23,7 @@ use crate::{get_audio_inputs, AtomicF64};
 
 static NEXT_ID: AtomicU32 = AtomicU32::new(0);
 static READ_TIMEOUT: Duration = Duration::from_millis(100);
-static CHECK_PERIOD: Duration = Duration::from_secs(60);
+static CHECK_PERIOD: Duration = Duration::from_secs(60 * 15);
 
 pub struct BufferedRecorder {
     devices: Vec<Regex>,
@@ -165,7 +165,7 @@ impl BufferedRecorder {
                 now = Instant::now();
 
                 if self.producers.lock().unwrap().len() > 0 {
-                    debug!("Not Checking, Something is attempting Recording..");
+                    // Something is actively recording, don't break the loop..
                     continue;
                 }
 
@@ -189,6 +189,7 @@ impl BufferedRecorder {
                 }
 
                 // If we get here, nothing has stopped us, tear down the audio handler, and sleep..
+                input.unwrap().flush();
                 input = None;
                 self.is_ready.store(false, Ordering::Relaxed);
                 self.buffer.lock().unwrap().clear();
